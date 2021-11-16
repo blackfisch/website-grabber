@@ -2,6 +2,7 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 ![GitHub issues](https://img.shields.io/github/issues-raw/BlackFisch/website-grabber)
 ![GitHub pull requests](https://img.shields.io/github/issues-pr/Blackfisch/website-grabber)
+[![Pylint](https://github.com/BlackFisch/website-grabber/actions/workflows/pylint.yml/badge.svg)](https://github.com/BlackFisch/website-grabber/actions/workflows/pylint.yml)
 
 ## What can it do?
 This project aims to provide an easy-to-use CLI tool for downloading whole websites. This can be useful for academic uses as well as archive purposes.
@@ -16,7 +17,7 @@ This tool however only downloads the provided HTML file as well as related CSS/J
 * BeautifulSoup (see [Installation](#Installation))
 
 ## Installation
-You can just install the dependencies using pip: `pip -r requirements.txt`
+You can just install the dependencies using pip: `pip install -r requirements.txt`
 
 If you want to manually install the required packages using your preferrec package manager, see [requirements.txt](requirements.txt) for a list of packages
 
