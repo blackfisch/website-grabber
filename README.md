@@ -1,8 +1,9 @@
 # Website downloader
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Pylint](https://github.com/BlackFisch/website-grabber/actions/workflows/pylint.yml/badge.svg)](https://github.com/BlackFisch/website-grabber/actions/workflows/pylint.yml)
+[![CodeQL](https://github.com/BlackFisch/website-grabber/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/BlackFisch/website-grabber/actions/workflows/codeql-analysis.yml)
 ![GitHub issues](https://img.shields.io/github/issues-raw/BlackFisch/website-grabber)
 ![GitHub pull requests](https://img.shields.io/github/issues-pr/Blackfisch/website-grabber)
-[![Pylint](https://github.com/BlackFisch/website-grabber/actions/workflows/pylint.yml/badge.svg)](https://github.com/BlackFisch/website-grabber/actions/workflows/pylint.yml)
 
 ## What can it do?
 This project aims to provide an easy-to-use CLI tool for downloading whole websites. This can be useful for academic uses as well as archive purposes.
