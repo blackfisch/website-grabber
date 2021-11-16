@@ -1,147 +1,162 @@
 #!/usr/bin/env python3
 
+'''
+    Download websites with respective CSS and JS to ensure functionality with ease.
+
+    Usage: python download.py <url>
+'''
+
 import os
-import requests
-import argparse
 import re
-import unicodedata
+import sys
+import argparse
 from shutil import rmtree
+import requests
 from bs4 import BeautifulSoup
 
 
-parser = argparse.ArgumentParser(
+PARSER = argparse.ArgumentParser(
     description='Download a website with html & css')
-parser.add_argument('url', metavar='URL', type=str,
+PARSER.add_argument('url', metavar='URL', type=str,
                     nargs='?', help='full url to website')
 
-url = parser.parse_args().url
+URL = PARSER.parse_args().url
 
-if not url:
-    url = input("Please enter a url: ")
+if not URL:
+    URL = input("Please enter a url: ")
 
-    if not url:
-        parser.print_help()
-        exit(1)
+    if not URL:
+        PARSER.print_help()
+        sys.exit(1)
 
 
 # define helper functions
 def get_valid_filename(name):
-    def match(c):
+    '''
+        Remove invalid characters from filename.
 
-        m = re.match(r'[\w\d -.()\[\]\.,]', c)
-        return m
+        @args name: filename to be cleaned
+    '''
+    def match(char):
+        return re.match(r'[\w\d -.()\[\]\.,]', char)
 
-    filename = ''.join(e for e in name if match(e) is not None)
+    filename = ''.join(char for char in name if match(char) is not None)
     return filename
 
 
-def save_file(path, sourceurl):
-    # print(path, sourceurl)
-    print(f"downloading file {path[-1]}...")
+def save_file(path_l, sourceurl):
+    '''
+        Download file from sourceurl and save to path.
+
+        @args path_l: list of path elements
+        @args sourceurl: url of file to be downloaded
+    '''
+    print(f"downloading file {path_l[-1]}...")
 
     cur_p = FOLDER
-    for subpath in path[:-1]:
+    for subpath in path_l[:-1]:
         subpath = get_valid_filename(subpath)
         cur_p = os.path.join(cur_p, subpath)
         if not os.path.exists(cur_p):
             os.mkdir(cur_p)
 
-    filename = get_valid_filename(path[-1])
+    filename = get_valid_filename(path_l[-1])
 
-    with open(os.path.join(cur_p, filename), 'wb') as f:
+    with open(os.path.join(cur_p, filename), 'wb') as file:
         script_f = requests.get(sourceurl).content
-        f.write(script_f)
+        file.write(script_f)
 
 
 def prep_url(sourceurl):
+    '''
+        Prepare url for download.
+
+        @args sourceurl: url to be prepared
+    '''
     if sourceurl.startswith('./'):
-        sourceurl = f"{'/'.join(url.split('/')[:-1])}{sourceurl.replace('./','/')}"
+        sourceurl = f"{'/'.join(URL.split('/')[:-1])}{sourceurl.replace('./','/')}"
 
     if sourceurl.startswith('/'):
-        sourceurl = f"{url.split('/')[0]}//{url.split('/')[2]}{sourceurl}"
+        sourceurl = f"{URL.split('/')[0]}//{URL.split('/')[2]}{sourceurl}"
 
-    path = sourceurl.replace('..', 'dot').split('/')
+    path_l = sourceurl.replace('..', 'dot').split('/')
 
     if sourceurl.startswith('http'):
-        path = path[3:]
+        path_l = path_l[3:]
     if sourceurl.startswith('..'):
-        sourceurl = f"{'/'.join(url.split('/')[:-1])}"
+        sourceurl = f"{'/'.join(URL.split('/')[:-1])}"
 
         sourceurl = sourceurl.split('/')
-        sourceurl = sourceurl[:-(path.count('dot'))]
-        sourceurl = f"{'/'.join(sourceurl)}/{path[-1]}"
+        sourceurl = sourceurl[:-(path_l.count('dot'))]
+        sourceurl = f"{'/'.join(sourceurl)}/{path_l[-1]}"
 
-    return (sourceurl, path)
+    return (sourceurl, path_l)
 
 
 # request url
 
-r = requests.get(url)
-soup = BeautifulSoup(r.content, 'html.parser')
+REQ = requests.get(URL)
+SOUP = BeautifulSoup(REQ.content, 'html.parser')
 
-title = None
-if soup.head.title is not None:
-    title = soup.head.title.contents[0]
-elif soup.title is not None:
-    title = soup.title.contents[0]
+TITLE = None
+if SOUP.head.title is not None:
+    TITLE = SOUP.head.title.contents[0]
+elif SOUP.title is not None:
+    TITLE = SOUP.title.contents[0]
 else:
-    title = url.split('/')[2]
+    TITLE = URL.split('/')[2]
 
 CWD = os.getcwd()
-FOLDER = os.path.join(CWD, get_valid_filename(title))
+FOLDER = os.path.join(CWD, get_valid_filename(TITLE))
 
-if (os.path.exists(FOLDER)):
+if os.path.exists(FOLDER):
     rmtree(FOLDER)
 
 os.mkdir(FOLDER)
 
 # get links, dereference, download and save
-links = soup.find_all('link')
-scripts = soup.find_all('script')
-
-for link in links:
+for link in SOUP.find_all('link'):
     if link.get('rel', [''])[0].lower() == 'stylesheet':
 
-        sourceurl = link.get('href', '')
+        source_url = link.get('href', '')
 
-        (source, path) = prep_url(sourceurl)
-
+        (source, path) = prep_url(source_url)
         link['href'] = '/'.join(path)
 
         save_file(path, source)
 
-for script in scripts:
+for script in SOUP.find_all('script'):
     if script.get('src', '') != '':
-        sourceurl = script.get('src')
+        source_url = script.get('src')
 
-        (source, path) = prep_url(sourceurl)
+        (source, path) = prep_url(source_url)
 
         script['src'] = '/'.join(path)
 
         save_file(path, source)
 
 # fix relative links
-for link in soup.find_all('a'):
+for link in SOUP.find_all('a'):
     href = link.get('href', '')
     if href.startswith('./'):
-        link['href'] = f"{'/'.join(url.split('/')[:-1])}{href.replace('./','/')}"
+        link['href'] = f"{'/'.join(URL.split('/')[:-1])}{href.replace('./','/')}"
 
     elif href.startswith('/'):
-        link['href'] = f"{url.split('/')[0]}//{url.split('/')[2]}{href}"
+        link['href'] = f"{URL.split('/')[0]}//{URL.split('/')[2]}{href}"
 
     elif href.startswith('..'):
         href = href.split('/')
         dot_cnt = href.count('..')
-        sourceurl = f"{'/'.join(url.split('/')[:-1])}"
+        source_url = f"{'/'.join(URL.split('/')[:-1])}"
 
-        sourceurl = sourceurl.split('/')
-        sourceurl = sourceurl[:-(dot_cnt)]
-        sourceurl = f"{'/'.join(sourceurl)}/{'/'.join(href[dot_cnt:])}"
+        source_url = source_url.split('/')
+        source_url = source_url[:-(dot_cnt)]
+        source_url = f"{'/'.join(source_url)}/{'/'.join(href[dot_cnt:])}"
 
-        link['href'] = sourceurl
+        link['href'] = source_url
 
-with open(os.path.join(FOLDER, 'index.html'), 'wb') as f:
-    f.write(soup.encode())
+with open(os.path.join(FOLDER, 'index.html'), 'wb') as index_file:
+    index_file.write(SOUP.encode())
 
 print()
-print(f"    Website '{title}' saved to {FOLDER}")
+print(f"    Website '{TITLE}' saved to {FOLDER}")
