@@ -10,6 +10,7 @@ This project aims to provide an easy-to-use CLI tool for downloading whole websi
 
 This tool however only downloads the provided HTML file as well as related CSS/JS files. Hyperlinks are retained intact to link to webpages.
 
+---
 
 ## Requirements
 * Python 3
@@ -17,18 +18,35 @@ This tool however only downloads the provided HTML file as well as related CSS/J
 * requests (see [Installation](#Installation))
 * BeautifulSoup (see [Installation](#Installation))
 
+---
+
 ## Installation
 You can just install the dependencies using pip: `pip install -r requirements.txt`
 
 If you want to manually install the required packages using your preferrec package manager, see [requirements.txt](requirements.txt) for a list of packages
 
+---
+
 ## Usage
+For a list of available parameters, run `python download.py -h`.
+
+### single URL
 Run the Python script `download.py`. You can pass the URL to download as a parameter, otherwise you will be prompted to enter it.
 
 Example: `python download.py https://google.com`
 
+
+### multiple URLs
+Create a file (e.g. `urls.txt`) containing one (1) URL per line. Now run the Python script using the `-f` Parameter, specifying your filename.
+
+Example: `python download.py -f urls.txt`
+
+---
+
 ## Issues & Features
 If you find any problems or have a feature request, feel free to open an Issue or Pull Request.
+
+---
 
 ## License
 This project is licensed under **GNU General Public License v3.0**.
