@@ -82,27 +82,26 @@ def download_page(site_url: str):
         Download page and save to file.
     '''
     # request url
-    REQ = requests.get(site_url)
-    SOUP = BeautifulSoup(REQ.content, 'html.parser')
+    req = requests.get(site_url)
+    soup = BeautifulSoup(req.content, 'html.parser')
 
-    TITLE = None
-    if SOUP.head.title is not None:
-        TITLE = SOUP.head.title.contents[0]
-    elif SOUP.title is not None:
-        TITLE = SOUP.title.contents[0]
+    title = None
+    if soup.head.title is not None:
+        title = soup.head.title.contents[0]
+    elif soup.title is not None:
+        title = soup.title.contents[0]
     else:
-        TITLE = site_url.split('/')[2]
+        title = site_url.split('/')[2]
 
-    CWD = os.getcwd()
-    FOLDER = os.path.join(CWD, get_valid_filename(TITLE))
+    folder = os.path.join(os.getcwd(), get_valid_filename(title))
 
-    if os.path.exists(FOLDER):
-        rmtree(FOLDER)
+    if os.path.exists(folder):
+        rmtree(folder)
 
-    os.mkdir(FOLDER)
+    os.mkdir(folder)
 
     # get links, dereference, download and save
-    for link in SOUP.find_all('link'):
+    for link in soup.find_all('link'):
         if link.get('rel', [''])[0].lower() == 'stylesheet':
 
             source_url = link.get('href', '')
@@ -110,9 +109,9 @@ def download_page(site_url: str):
             (source, path) = prep_url(source_url, site_url)
             link['href'] = '/'.join(path)
 
-            save_file(path, source, FOLDER)
+            save_file(path, source, folder)
 
-    for script in SOUP.find_all('script'):
+    for script in soup.find_all('script'):
         if script.get('src', '') != '':
             source_url = script.get('src')
 
@@ -120,10 +119,10 @@ def download_page(site_url: str):
 
             script['src'] = '/'.join(path)
 
-            save_file(path, source, FOLDER)
+            save_file(path, source, folder)
 
     # fix relative links
-    for link in SOUP.find_all('a'):
+    for link in soup.find_all('a'):
         href = link.get('href', '')
         if href.startswith('./'):
             link['href'] = f"{'/'.join(site_url.split('/')[:-1])}{href.replace('./','/')}"
@@ -142,11 +141,11 @@ def download_page(site_url: str):
 
             link['href'] = source_url
 
-    with open(os.path.join(FOLDER, 'index.html'), 'wb') as index_file:
-        index_file.write(SOUP.encode())
+    with open(os.path.join(folder, 'index.html'), 'wb') as index_file:
+        index_file.write(soup.encode())
 
     print()
-    print(f"    Website '{TITLE}' saved to {FOLDER}")
+    print(f"    Website '{title}' saved to {folder}")
 
 
 if __name__ == '__main__':
@@ -163,8 +162,8 @@ if __name__ == '__main__':
     if not URL:
         if FILE:
             print(f"Reading URLs from file {FILE}")
-            with open(FILE, 'r') as file:
-                for line in file.readlines():
+            with open(FILE, 'r', encoding='utf-8') as input_file:
+                for line in input_file.readlines():
                     URL = line.strip()
                     download_page(URL)
             sys.exit(0)
