@@ -77,7 +77,32 @@ def prep_url(sourceurl: str, site_url: str):
     return (sourceurl, path_l)
 
 
-def download_page(site_url: str):
+def fix_rel_links(element, attr: str, site_url: str):
+    '''
+        Convert relative paths to absolute paths and return the element.
+    '''
+    href = element.get(attr, '')
+    if href.startswith('./'):
+        element[attr] = f"{'/'.join(site_url.split('/')[:-1])}{href.replace('./','/')}"
+
+    elif href.startswith('/'):
+        element[attr] = f"{site_url.split('/')[0]}//{site_url.split('/')[2]}{href}"
+
+    elif href.startswith('..'):
+        href = href.split('/')
+        dot_cnt = href.count('..')
+        source_url = f"{'/'.join(site_url.split('/')[:-1])}"
+
+        source_url = source_url.split('/')
+        source_url = source_url[:-(dot_cnt)]
+        source_url = f"{'/'.join(source_url)}/{'/'.join(href[dot_cnt:])}"
+
+        element[attr] = source_url
+
+    return element
+
+
+def download_page(site_url: str, save_images: bool):
     '''
         Download page and save to file.
     '''
@@ -85,13 +110,11 @@ def download_page(site_url: str):
     req = requests.get(site_url)
     soup = BeautifulSoup(req.content, 'html.parser')
 
-    title = None
+    title = site_url.split('/')[2]
     if soup.head.title is not None:
         title = soup.head.title.contents[0]
     elif soup.title is not None:
         title = soup.title.contents[0]
-    else:
-        title = site_url.split('/')[2]
 
     folder = os.path.join(os.getcwd(), get_valid_filename(title))
 
@@ -103,44 +126,34 @@ def download_page(site_url: str):
     # get links, dereference, download and save
     for link in soup.find_all('link'):
         if link.get('rel', [''])[0].lower() == 'stylesheet':
-
             source_url = link.get('href', '')
-
             (source, path) = prep_url(source_url, site_url)
             link['href'] = '/'.join(path)
-
             save_file(path, source, folder)
 
     for script in soup.find_all('script'):
         if script.get('src', '') != '':
             source_url = script.get('src')
-
             (source, path) = prep_url(source_url, site_url)
-
             script['src'] = '/'.join(path)
-
             save_file(path, source, folder)
+
+    if save_images:
+        for img in soup.find_all('img'):
+            source_url = img.get('src')
+            (source, path) = prep_url(source_url, site_url)
+            img['src'] = '/'.join(path)
+            save_file(path, source, folder)
+    else:
+        # fix relative links
+        for img in soup.find_all('img'):
+            img = fix_rel_links(img, 'src', site_url)
 
     # fix relative links
     for link in soup.find_all('a'):
-        href = link.get('href', '')
-        if href.startswith('./'):
-            link['href'] = f"{'/'.join(site_url.split('/')[:-1])}{href.replace('./','/')}"
+        link = fix_rel_links(link, 'href', site_url)
 
-        elif href.startswith('/'):
-            link['href'] = f"{site_url.split('/')[0]}//{site_url.split('/')[2]}{href}"
-
-        elif href.startswith('..'):
-            href = href.split('/')
-            dot_cnt = href.count('..')
-            source_url = f"{'/'.join(site_url.split('/')[:-1])}"
-
-            source_url = source_url.split('/')
-            source_url = source_url[:-(dot_cnt)]
-            source_url = f"{'/'.join(source_url)}/{'/'.join(href[dot_cnt:])}"
-
-            link['href'] = source_url
-
+    # save html to disk
     with open(os.path.join(folder, 'index.html'), 'wb') as index_file:
         index_file.write(soup.encode())
 
@@ -155,9 +168,12 @@ if __name__ == '__main__':
                         nargs='?', help='full url to website')
     PARSER.add_argument('-f', '--file', metavar='FILE', type=str,
                         nargs='?', dest='file', help='specify input file')
+    PARSER.add_argument('-i', '--download-images', action='store_const', const=True,
+                        dest='dl_img', help='force download of image files as well')
 
     URL = PARSER.parse_args().url
     FILE = PARSER.parse_args().file
+    DL_IMAGES = PARSER.parse_args().dl_img
 
     if not URL:
         if FILE:
@@ -165,7 +181,7 @@ if __name__ == '__main__':
             with open(FILE, 'r', encoding='utf-8') as input_file:
                 for line in input_file.readlines():
                     URL = line.strip()
-                    download_page(URL)
+                    download_page(URL, DL_IMAGES)
             sys.exit(0)
 
         else:
@@ -175,4 +191,4 @@ if __name__ == '__main__':
                 PARSER.print_help()
                 sys.exit(1)
 
-    download_page(URL)
+    download_page(URL, DL_IMAGES)
